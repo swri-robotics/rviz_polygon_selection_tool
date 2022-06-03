@@ -8,6 +8,7 @@
 #include <rviz_common/viewport_mouse_event.hpp>
 #include <rviz_common/interaction/view_picker.hpp>
 #include <rviz_rendering/material_manager.hpp>
+#include <rviz_common/properties/bool_property.hpp>
 #include <rclcpp/service.hpp>
 
 namespace rviz_polygon_selection_tool
@@ -18,6 +19,9 @@ public:
   PolygonSelectionTool() : rviz_common::Tool()
   {
     shortcut_key_ = 'p';
+
+    lasso_mode_property_ = new rviz_common::properties::BoolProperty(
+        "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
   }
 
   void onInitialize() override
@@ -29,7 +33,6 @@ public:
 
     pts_vis_ = scene_manager_->createManualObject("points");
     scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(pts_vis_);
-    //    pts_material = createMaterial("points_material");
     pts_material_ = rviz_rendering::MaterialManager::createMaterialWithNoLighting("points_material");
     pts_material_->setPointSize(5.0);
 
@@ -47,7 +50,7 @@ public:
   int processMouseEvent(rviz_common::ViewportMouseEvent& event) override
   {
     // Collect the point
-    if (event.leftUp())
+    if (event.leftUp() || (event.left() && lasso_mode_property_->getBool()))
     {
       Ogre::Vector3 position;
       if (context_->getViewPicker()->get3DPoint(event.panel, event.x, event.y, position))
@@ -88,17 +91,20 @@ private:
 
   void updateVisual()
   {
-    // Add the points to the display
-    pts_vis_->clear();
-    pts_vis_->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_POINT_LIST);
-    for (std::size_t i = 0; i < points_.size(); ++i)
+    // Add the points to the display when not in lasso mode
+    if (!lasso_mode_property_->getBool())
     {
-      pts_vis_->position(points_[i]);
-    }
-    pts_vis_->end();
+      pts_vis_->clear();
+      pts_vis_->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_POINT_LIST);
+      for (std::size_t i = 0; i < points_.size(); ++i)
+      {
+        pts_vis_->position(points_[i]);
+      }
+      pts_vis_->end();
 
-    // Set the custom material
-    pts_vis_->setMaterial(0, pts_material_);
+      // Set the custom material
+      pts_vis_->setMaterial(0, pts_material_);
+    }
 
     // Add the polygon lines
     if (points_.size() > 1)
@@ -123,6 +129,7 @@ private:
     }
   }
 
+  rviz_common::properties::BoolProperty* lasso_mode_property_;
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
   std::vector<Ogre::Vector3> points_;
   Ogre::ManualObject* pts_vis_{ nullptr };
