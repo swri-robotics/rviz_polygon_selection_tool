@@ -39,7 +39,7 @@ void PolygonSelectionTool::onInitialize()
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
 
-  pt_color_property_ = new rviz_common::properties::ColorProperty("Point Color", Qt::white, "Color of the points",
+  pt_color_property_ = new rviz_common::properties::ColorProperty("Point Color", Qt::black, "Color of the points",
                                                                   getPropertyContainer(), SLOT(updatePtsColor()), this);
 
   line_color_property_ = new rviz_common::properties::ColorProperty(
