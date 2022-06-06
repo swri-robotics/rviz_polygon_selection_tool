@@ -1,0 +1,8 @@
+<library path="rviz_polygon_selection_tool_plugin">
+  <class name="rviz_polygon_selection_tool/PolygonSelectionTool" type="rviz_polygon_selection_tool::PolygonSelectionTool" base_class_type="rviz_common::Tool">
+    <description>
+      Rviz tool for collecting a polygon selection boundary
+    </description>
+  </class>
+</library>
+
