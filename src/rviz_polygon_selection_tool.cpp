@@ -39,14 +39,14 @@ void PolygonSelectionTool::onInitialize()
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
 
-  pt_color_property_ = new rviz_common::properties::ColorProperty(
-      "Point Color", Qt::white, "Color of the points", getPropertyContainer(), SLOT(updatePtsColor()), this);
+  pt_color_property_ = new rviz_common::properties::ColorProperty("Point Color", Qt::white, "Color of the points",
+                                                                  getPropertyContainer(), SLOT(updatePtsColor()), this);
 
   line_color_property_ = new rviz_common::properties::ColorProperty(
       "Line Color", Qt::black, "Color of the line", getPropertyContainer(), SLOT(updateLinesColor()), this);
 
-  pt_size_property_ = new rviz_common::properties::FloatProperty(
-      "Point Size", 5.0, "Size of clicked points", getPropertyContainer(), SLOT(updatePtsSize()), this);
+  pt_size_property_ = new rviz_common::properties::FloatProperty("Point Size", 5.0, "Size of clicked points",
+                                                                 getPropertyContainer(), SLOT(updatePtsSize()), this);
 }
 
 int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& event)

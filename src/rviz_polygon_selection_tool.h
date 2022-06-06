@@ -12,8 +12,8 @@ namespace properties
 class BoolProperty;
 class ColorProperty;
 class FloatProperty;
-}
-}
+}  // namespace properties
+}  // namespace rviz_common
 
 class OgreManualObject;
 
