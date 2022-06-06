@@ -1,5 +1,16 @@
 #include "rviz_polygon_selection_tool.h"
 
+#include <OgreManualObject.h>
+#include <OgreSceneManager.h>
+#include <OgreSceneNode.h>
+#include <rviz_common/display_context.hpp>
+#include <rviz_common/viewport_mouse_event.hpp>
+#include <rviz_common/interaction/view_picker.hpp>
+#include <rviz_rendering/material_manager.hpp>
+#include <rviz_common/properties/bool_property.hpp>
+#include <rviz_common/properties/color_property.hpp>
+#include <rviz_common/properties/float_property.hpp>
+
 namespace rviz_polygon_selection_tool
 {
 PolygonSelectionTool::PolygonSelectionTool() : rviz_common::Tool()
@@ -28,14 +39,14 @@ void PolygonSelectionTool::onInitialize()
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
 
-  lasso_pt_color_property_ = new rviz_common::properties::ColorProperty(
+  pt_color_property_ = new rviz_common::properties::ColorProperty(
       "Point Color", Qt::white, "Color of the points", getPropertyContainer(), SLOT(updatePtsColor()), this);
 
-  lasso_line_color_property_ = new rviz_common::properties::ColorProperty(
+  line_color_property_ = new rviz_common::properties::ColorProperty(
       "Line Color", Qt::black, "Color of the line", getPropertyContainer(), SLOT(updateLinesColor()), this);
 
-  lasso_pt_size_property_ =
-      new rviz_common::properties::FloatProperty("Point Size", 5.0, "Size of clicked points", getPropertyContainer());
+  pt_size_property_ = new rviz_common::properties::FloatProperty(
+      "Point Size", 5.0, "Size of clicked points", getPropertyContainer(), SLOT(updatePtsSize()), this);
 }
 
 int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& event)
@@ -67,7 +78,7 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
 
 void PolygonSelectionTool::updatePtsColor()
 {
-  auto q_color = lasso_pt_color_property_->getColor();
+  auto q_color = pt_color_property_->getColor();
   int r, g, b, a;
   q_color.getRgb(&r, &g, &b, &a);
   PolygonSelectionTool::updatePtsColor(r, g, b, a);
@@ -75,10 +86,15 @@ void PolygonSelectionTool::updatePtsColor()
 
 void PolygonSelectionTool::updateLinesColor()
 {
-  auto q_color = lasso_line_color_property_->getColor();
+  auto q_color = line_color_property_->getColor();
   int r, g, b, a;
   q_color.getRgb(&r, &g, &b, &a);
   PolygonSelectionTool::updateLinesColor(r, g, b, a);
+}
+
+void PolygonSelectionTool::updatePtsSize()
+{
+  pts_material_->setPointSize(pt_size_property_->getFloat());
 }
 
 void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr,
@@ -98,7 +114,7 @@ void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr,
 
 void PolygonSelectionTool::updateVisual()
 {
-  pts_material_->setPointSize(lasso_pt_size_property_->getFloat());
+  pts_material_->setPointSize(pt_size_property_->getFloat());
 
   // Add the points to the display when not in lasso mode
   if (!lasso_mode_property_->getBool())
@@ -154,10 +170,10 @@ void PolygonSelectionTool::updateLinesColor(const int r, const int g, const int 
 {
   lines_material_->setDiffuse(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
                               static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
-  pts_material_->setSpecular(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                             static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
-  pts_material_->setAmbient(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                            static_cast<float>(b) / 255.0f);
+  lines_material_->setSpecular(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
+                               static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
+  lines_material_->setAmbient(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
+                              static_cast<float>(b) / 255.0f);
 }
 
 }  // namespace rviz_polygon_selection_tool
