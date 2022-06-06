@@ -34,6 +34,7 @@ endif()
 rosidl_generate_interfaces(
   ${PROJECT_NAME}
   "srv/GetSelection.srv"
+  "msg/Selection.msg"
   DEPENDENCIES
   geometry_msgs)
 

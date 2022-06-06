@@ -1,5 +1,6 @@
 #include "rviz_polygon_selection_tool.h"
 
+#include <geometry_msgs/msg/point_stamped.hpp>
 #include <OgreManualObject.h>
 #include <OgreSceneManager.h>
 #include <OgreSceneNode.h>
@@ -21,8 +22,10 @@ PolygonSelectionTool::PolygonSelectionTool() : rviz_common::Tool()
 void PolygonSelectionTool::onInitialize()
 {
   rclcpp::Node::SharedPtr node = context_->getRosNodeAbstraction().lock()->get_raw_node();
-  server_ = node->create_service<srv::GetSelection>(
-      "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
+  //  server_ = node->create_service<srv::GetSelection>(
+  //      "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1,
+  //      std::placeholders::_2));
+  publisher_ = node->create_publisher<msg::Selection>("selection", 1);
 
   pts_vis_ = scene_manager_->createManualObject("points");
   scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(pts_vis_);
@@ -59,6 +62,7 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
     {
       points_.push_back(position);
       updateVisual();
+      publish();
     }
   }
   else if (event.middleUp())
@@ -97,19 +101,36 @@ void PolygonSelectionTool::updatePtsSize()
   pts_material_->setPointSize(pt_size_property_->getFloat());
 }
 
-void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr,
-                                    const srv::GetSelection::Response::SharedPtr res)
+// void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr,
+//                                    const srv::GetSelection::Response::SharedPtr res)
+//{
+//  res->selection.reserve(points_.size());
+//  for (const Ogre::Vector3& pt : points_)
+//  {
+//    geometry_msgs::msg::PointStamped msg;
+//    msg.header.frame_id = context_->getFixedFrame().toStdString();
+//    msg.point.x = pt.x;
+//    msg.point.y = pt.y;
+//    msg.point.z = pt.z;
+//    res->selection.push_back(msg);
+//  }
+//}
+
+void PolygonSelectionTool::publish()
 {
-  res->selection.reserve(points_.size());
+  msg::Selection msg;
+  msg.selection.reserve(points_.size());
   for (const Ogre::Vector3& pt : points_)
   {
-    geometry_msgs::msg::PointStamped msg;
-    msg.header.frame_id = context_->getFixedFrame().toStdString();
-    msg.point.x = pt.x;
-    msg.point.y = pt.y;
-    msg.point.z = pt.z;
-    res->selection.push_back(msg);
+    geometry_msgs::msg::PointStamped pt_msg;
+    pt_msg.header.frame_id = context_->getFixedFrame().toStdString();
+    pt_msg.point.x = pt.x;
+    pt_msg.point.y = pt.y;
+    pt_msg.point.z = pt.z;
+    msg.selection.push_back(pt_msg);
   }
+
+  publisher_->publish(msg);
 }
 
 void PolygonSelectionTool::updateVisual()
