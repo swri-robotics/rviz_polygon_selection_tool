@@ -35,14 +35,13 @@ public Q_SLOTS:
   void updatePtsColor();
   void updatePtsSize();
   void updateLinesColor();
+  void updateVisual();
 
 private:
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
-  void updateVisual();
-  void updatePtsColor(const int r, const int g, const int b, const int a);
-  void updateLinesColor(const int r, const int g, const int b, const int a);
 
   rviz_common::properties::BoolProperty* lasso_mode_property_;
+  rviz_common::properties::BoolProperty* close_loop_property_;
   rviz_common::properties::ColorProperty* pt_color_property_;
   rviz_common::properties::ColorProperty* line_color_property_;
   rviz_common::properties::FloatProperty* pt_size_property_;

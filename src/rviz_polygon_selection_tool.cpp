@@ -11,6 +11,15 @@
 #include <rviz_common/properties/color_property.hpp>
 #include <rviz_common/properties/float_property.hpp>
 
+static void updateMaterialColor(Ogre::MaterialPtr material, const QColor& color)
+{
+  qreal r, g, b, a;
+  color.getRgbF(&r, &g, &b, &a);
+  material->setDiffuse(r, g, b, a);
+  material->setSpecular(r, g, b, a);
+  material->setAmbient(r, g, b);
+}
+
 namespace rviz_polygon_selection_tool
 {
 PolygonSelectionTool::PolygonSelectionTool() : rviz_common::Tool()
@@ -24,20 +33,24 @@ void PolygonSelectionTool::onInitialize()
   server_ = node->create_service<srv::GetSelection>(
       "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
 
+  // Add the points visualization
   pts_vis_ = scene_manager_->createManualObject("points");
   scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(pts_vis_);
   pts_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("points_material");
-  pts_material_->setPointSize(5.0);
-  PolygonSelectionTool::updatePtsColor(255, 255, 255, 255);
 
+  // Add the lines visualization
   lines_vis_ = scene_manager_->createManualObject("lines");
-
   scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(lines_vis_);
   lines_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("lines_material");
-  PolygonSelectionTool::updateLinesColor(0, 0, 0, 255);
 
+  // Add the properties
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
+
+  close_loop_property_ = new rviz_common::properties::BoolProperty("Close loop", true,
+                                                                   "Close the polygon with a line between the last and "
+                                                                   "first points",
+                                                                   getPropertyContainer(), SLOT(updateVisual()), this);
 
   pt_color_property_ = new rviz_common::properties::ColorProperty("Point Color", Qt::black, "Color of the points",
                                                                   getPropertyContainer(), SLOT(updatePtsColor()), this);
@@ -47,6 +60,11 @@ void PolygonSelectionTool::onInitialize()
 
   pt_size_property_ = new rviz_common::properties::FloatProperty("Point Size", 5.0, "Size of clicked points",
                                                                  getPropertyContainer(), SLOT(updatePtsSize()), this);
+
+  // Update the materials
+  updatePtsSize();
+  updatePtsColor();
+  updateLinesColor();
 }
 
 int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& event)
@@ -78,18 +96,12 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
 
 void PolygonSelectionTool::updatePtsColor()
 {
-  auto q_color = pt_color_property_->getColor();
-  int r, g, b, a;
-  q_color.getRgb(&r, &g, &b, &a);
-  PolygonSelectionTool::updatePtsColor(r, g, b, a);
+  return updateMaterialColor(pts_material_, pt_color_property_->getColor());
 }
 
 void PolygonSelectionTool::updateLinesColor()
 {
-  auto q_color = line_color_property_->getColor();
-  int r, g, b, a;
-  q_color.getRgb(&r, &g, &b, &a);
-  PolygonSelectionTool::updateLinesColor(r, g, b, a);
+  return updateMaterialColor(lines_material_, line_color_property_->getColor());
 }
 
 void PolygonSelectionTool::updatePtsSize()
@@ -144,7 +156,7 @@ void PolygonSelectionTool::updateVisual()
     }
 
     // Close the polygon
-    if (points_.size() > 2)
+    if (points_.size() > 2 && close_loop_property_->getBool())
     {
       lines_vis_->position(points_.back());
       lines_vis_->position(points_.front());
@@ -154,26 +166,6 @@ void PolygonSelectionTool::updateVisual()
 
     lines_vis_->setMaterial(0, lines_material_);
   }
-}
-
-void PolygonSelectionTool::updatePtsColor(const int r, const int g, const int b, const int a)
-{
-  pts_material_->setDiffuse(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                            static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
-  pts_material_->setSpecular(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                             static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
-  pts_material_->setAmbient(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                            static_cast<float>(b) / 255.0f);
-}
-
-void PolygonSelectionTool::updateLinesColor(const int r, const int g, const int b, const int a)
-{
-  lines_material_->setDiffuse(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                              static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
-  lines_material_->setSpecular(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                               static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
-  lines_material_->setAmbient(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f,
-                              static_cast<float>(b) / 255.0f);
 }
 
 }  // namespace rviz_polygon_selection_tool
