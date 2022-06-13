@@ -39,6 +39,11 @@ void PolygonSelectionTool::onInitialize()
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
 
+  close_loop_property_ = new rviz_common::properties::BoolProperty("Close loop", true,
+                                                                   "Close the polygon with a line between the last and "
+                                                                   "first points",
+                                                                   getPropertyContainer(), SLOT(updateVisual()), this);
+
   pt_color_property_ = new rviz_common::properties::ColorProperty("Point Color", Qt::black, "Color of the points",
                                                                   getPropertyContainer(), SLOT(updatePtsColor()), this);
 
@@ -144,7 +149,7 @@ void PolygonSelectionTool::updateVisual()
     }
 
     // Close the polygon
-    if (points_.size() > 2)
+    if (points_.size() > 2 && close_loop_property_->getBool())
     {
       lines_vis_->position(points_.back());
       lines_vis_->position(points_.front());
