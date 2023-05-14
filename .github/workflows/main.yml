@@ -1,4 +1,4 @@
-name: CI
+name: Foxy | Humble | Rolling
 
 on:
   push:
@@ -12,14 +12,11 @@ jobs:
   industrial_ci:
     strategy:
       fail-fast: false
+      matrix:
+        distro: [foxy, humble, rolling]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: 'ros-industrial/industrial_ci@master'
         env:
-          CI_NAME: focal
-          OS_NAME: ubuntu
-          OS_CODE_NAME: focal
-          ROS_DISTRO: foxy
-          ROS_REPO: main
-          DOCKER_IMAGE: ros:foxy
+          ROS_DISTRO: ${{ matrix.distro }}
