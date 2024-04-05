@@ -4,6 +4,7 @@
 #include <OgreVector3.h>
 #include <rviz_common/tool.hpp>
 #include <rclcpp/service.hpp>
+#include <qevent.h>
 
 namespace rviz_common
 {
@@ -30,6 +31,7 @@ public:
   void activate() override{};
   void deactivate() override{};
   int processMouseEvent(rviz_common::ViewportMouseEvent& event) override;
+  int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
 
 public Q_SLOTS:
   void updatePtsColor();
@@ -38,6 +40,8 @@ public Q_SLOTS:
   void updateVisual();
 
 private:
+  static constexpr int num_selections_ = 3;
+  int sel = 0;
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
 
   rviz_common::properties::BoolProperty* lasso_mode_property_;
@@ -46,11 +50,11 @@ private:
   rviz_common::properties::ColorProperty* line_color_property_;
   rviz_common::properties::FloatProperty* pt_size_property_;
 
-  rclcpp::Service<srv::GetSelection>::SharedPtr server_;
+  rclcpp::Service<srv::GetSelection>::SharedPtr server_[num_selections_];
 
-  std::vector<Ogre::Vector3> points_;
-  Ogre::ManualObject* pts_vis_{ nullptr };
-  Ogre::ManualObject* lines_vis_{ nullptr };
+  std::vector<Ogre::Vector3> points_[num_selections_];
+  Ogre::ManualObject* pts_vis_[num_selections_]{ nullptr };
+  Ogre::ManualObject* lines_vis_[num_selections_]{ nullptr };
   Ogre::MaterialPtr pts_material_{ nullptr };
   Ogre::MaterialPtr lines_material_{ nullptr };
 };
