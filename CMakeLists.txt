@@ -46,6 +46,10 @@ target_link_libraries(${PROJECT_NAME}_plugin ${msgs_target})
 install(TARGETS ${PROJECT_NAME}_plugin EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
 ament_export_targets(${PROJECT_NAME}-targets HAS_LIBRARY_TARGET)
 
-ament_export_dependencies(geometry_msgs rosidl_default_runtime rviz_common pluginlib)
+ament_export_dependencies(
+  geometry_msgs
+  rosidl_default_runtime
+  rviz_common
+  pluginlib)
 pluginlib_export_plugin_description_file(rviz_common plugin_description.xml)
 ament_package()
