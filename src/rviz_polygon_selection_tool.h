@@ -50,7 +50,7 @@ private:
   rviz_common::properties::ColorProperty* line_color_property_;
   rviz_common::properties::FloatProperty* pt_size_property_;
 
-  rclcpp::Service<srv::GetSelection>::SharedPtr server_[num_selections_];
+  rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
   std::vector<Ogre::Vector3> points_[num_selections_];
   Ogre::ManualObject* pts_vis_[num_selections_]{ nullptr };

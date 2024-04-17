@@ -30,10 +30,10 @@ PolygonSelectionTool::PolygonSelectionTool() : rviz_common::Tool()
 void PolygonSelectionTool::onInitialize()
 {
   rclcpp::Node::SharedPtr node = context_->getRosNodeAbstraction().lock()->get_raw_node();
+  server_ = node->create_service<srv::GetSelection>(
+        "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
   for (int i = 0; i < num_selections_; ++i) 
   {
-    server_[i] = node->create_service<srv::GetSelection>(
-        "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Add the points visualization
     pts_vis_[i] = scene_manager_->createManualObject("points_" + std::to_string(i));
@@ -130,15 +130,25 @@ void PolygonSelectionTool::updatePtsSize()
 void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr,
                                     const srv::GetSelection::Response::SharedPtr res)
 {
-  res->selection.reserve(points_[sel].size());
-  for (const Ogre::Vector3& pt : points_[sel])
-  {
-    geometry_msgs::msg::PointStamped msg;
-    msg.header.frame_id = context_->getFixedFrame().toStdString();
-    msg.point.x = pt.x;
-    msg.point.y = pt.y;
-    msg.point.z = pt.z;
-    res->selection.push_back(msg);
+  size_t totalSize = 0;
+  for (const auto &vec : points_) {
+    totalSize += vec.size();
+  }
+  // std::cout << "Total Size: " << totalSize << std::endl;
+  // std::cout << "Points[i]: " << points_[0].size() << std::endl;
+
+  res->selection.reserve(totalSize);
+  for (int i = 0; i < num_selections_; ++i) {
+    if(points_[i].empty()) continue;
+    for (const Ogre::Vector3& pt : points_[i])
+    {
+      geometry_msgs::msg::PointStamped msg;
+      msg.header.frame_id = context_->getFixedFrame().toStdString();
+      msg.point.x = pt.x;
+      msg.point.y = pt.y;
+      msg.point.z = pt.z;
+      res->selection.push_back(msg);
+    }
   }
 }
 
