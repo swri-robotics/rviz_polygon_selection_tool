@@ -4,7 +4,10 @@
 #include <OgreVector3.h>
 #include <rviz_common/tool.hpp>
 #include <rclcpp/service.hpp>
+#include <rclcpp/node.hpp>
 #include <qevent.h>
+#include <vector>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
 
 namespace rviz_common
 {
@@ -30,6 +33,7 @@ public:
   void onInitialize() override;
   void activate() override{};
   void deactivate() override{};
+  void newPolygon();
   int processMouseEvent(rviz_common::ViewportMouseEvent& event) override;
   int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
 
@@ -40,8 +44,8 @@ public Q_SLOTS:
   void updateVisual();
 
 private:
-  static constexpr int num_selections_ = 3;
-  int sel = 0;
+  int index = 0;
+  rclcpp::Node::SharedPtr node;
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
 
   rviz_common::properties::BoolProperty* lasso_mode_property_;
@@ -52,11 +56,11 @@ private:
 
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
-  std::vector<Ogre::Vector3> points_[num_selections_];
-  Ogre::ManualObject* pts_vis_[num_selections_]{ nullptr };
-  Ogre::ManualObject* lines_vis_[num_selections_]{ nullptr };
-  Ogre::MaterialPtr pts_material_{ nullptr };
-  Ogre::MaterialPtr lines_material_{ nullptr };
+  std::vector<std::vector<Ogre::Vector3>> points_;
+  std::vector<Ogre::ManualObject*> pts_vis_;
+  std::vector<Ogre::ManualObject*> lines_vis_;
+  Ogre::MaterialPtr pts_material_;
+  Ogre::MaterialPtr lines_material_;
 };
 
 }  // namespace rviz_polygon_selection_tool

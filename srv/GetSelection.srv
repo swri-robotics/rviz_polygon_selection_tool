@@ -1,2 +1,2 @@
 ---
-geometry_msgs/PointStamped[] selection
+geometry_msgs/PolygonStamped[] selection

@@ -29,22 +29,12 @@ PolygonSelectionTool::PolygonSelectionTool() : rviz_common::Tool()
 
 void PolygonSelectionTool::onInitialize()
 {
-  rclcpp::Node::SharedPtr node = context_->getRosNodeAbstraction().lock()->get_raw_node();
+  node = context_->getRosNodeAbstraction().lock()->get_raw_node();
   server_ = node->create_service<srv::GetSelection>(
         "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
-  for (int i = 0; i < num_selections_; ++i) 
-  {
-
-    // Add the points visualization
-    pts_vis_[i] = scene_manager_->createManualObject("points_" + std::to_string(i));
-    scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(pts_vis_[i]);
-    pts_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("points_material" + std::to_string(i));
-
-    // Add the lines visualization
-    lines_vis_[i] = scene_manager_->createManualObject("lines_" + std::to_string(i));
-    scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(lines_vis_[i]);
-    lines_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("lines_material" + std::to_string(i));
-  }
+  pts_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("points_material");
+  lines_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("lines_material");
+  
   // Add the properties
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
@@ -62,6 +52,18 @@ void PolygonSelectionTool::onInitialize()
 
   pt_size_property_ = new rviz_common::properties::FloatProperty("Point Size", 5.0, "Size of clicked points",
                                                                   getPropertyContainer(), SLOT(updatePtsSize()), this);
+  newPolygon();
+}
+
+void PolygonSelectionTool::newPolygon()
+{
+  // Add the points visualization
+  pts_vis_.push_back(scene_manager_->createManualObject("points_" + std::to_string(index)));
+  scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(pts_vis_[index]);
+
+  // Add the lines visualization
+  lines_vis_.push_back(scene_manager_->createManualObject("lines_" + std::to_string(index)));
+  scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(lines_vis_[index]);
 
   // Update the materials
   updatePtsSize();
@@ -77,37 +79,79 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
     Ogre::Vector3 position;
     if (context_->getViewPicker()->get3DPoint(event.panel, event.x, event.y, position))
     {
-      points_[sel].push_back(position);
+      // Check if the index is within the range of points_
+      if (index < int(points_.size())) {
+        // Insert position into the inner vector at the current index
+        points_[index].emplace_back(position);
+      } else {
+        // Create a new inner vector and insert position into it
+        points_.emplace_back(1, position); // Create a vector with 1 element (position)
+      }
       updateVisual();
     }
   }
   else if (event.middleUp())
   {
     // Clear the selection
-    points_[sel].clear();
-    lines_vis_[sel]->clear();
-    pts_vis_[sel]->clear();
+    points_[index].clear();
+    lines_vis_[index]->clear();
+    pts_vis_[index]->clear();
   }
   else if (event.rightUp())
   {
-    return rviz_common::Tool::Finished;
+    // return rviz_common::Tool::Finished;
+    index += 1;
+    newPolygon();
   }
-
   return rviz_common::Tool::Render;
 }
 
 int PolygonSelectionTool::processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel)
 {
-  switch (event->key())
-  { 
-    case Qt::Key_1:
-      sel = 0;
-      break;
-    case Qt::Key_2:
-      sel = 1;
-      break;
-    case Qt::Key_3:
-      sel = 2;
+  switch (event->key() )
+  {
+    case Qt::Key_Delete:
+      // Check if the vector is not null and clear its data
+      if (!points_.empty()) {
+        for (std::vector<Ogre::Vector3>& innerVec : points_) {
+            // Check if the inner vector is not null and clear its data
+            innerVec.clear();
+        }
+        points_.clear();
+      }
+
+      for (size_t i = 0; i < pts_vis_.size(); ++i) {
+        if (pts_vis_[i]) {
+          Ogre::SceneNode* parentNode = pts_vis_[i]->getParentSceneNode();
+          if (parentNode) {
+              // Detach the ManualObject from its parent scene node
+              parentNode->detachObject(pts_vis_[i]);
+              // Remove the ManualObject from the scene manager
+              scene_manager_->destroyManualObject(pts_vis_[i]);
+              // Remove the corresponding scene node from the scene manager
+              scene_manager_->destroySceneNode(parentNode);
+          }
+        }
+      }
+      pts_vis_.clear();
+
+      for (size_t i = 0; i < lines_vis_.size(); ++i) {
+        if (lines_vis_[i]) {
+          Ogre::SceneNode* parentNode = lines_vis_[i]->getParentSceneNode();
+          if (parentNode) {
+              // Detach the ManualObject from its parent scene node
+              parentNode->detachObject(lines_vis_[i]);
+              // Remove the ManualObject from the scene manager
+              scene_manager_->destroyManualObject(lines_vis_[i]);
+              // Remove the corresponding scene node from the scene manager
+              scene_manager_->destroySceneNode(parentNode);
+          }
+        }
+      }
+      lines_vis_.clear();
+      
+      index = 0;
+      newPolygon();
       break;
   }
 }
@@ -130,70 +174,62 @@ void PolygonSelectionTool::updatePtsSize()
 void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr,
                                     const srv::GetSelection::Response::SharedPtr res)
 {
-  size_t totalSize = 0;
-  for (const auto &vec : points_) {
-    totalSize += vec.size();
-  }
-  // std::cout << "Total Size: " << totalSize << std::endl;
-  // std::cout << "Points[i]: " << points_[0].size() << std::endl;
+  res->selection.reserve((index+1)); //reserve to the amount of polygons drawn in rviz
 
-  res->selection.reserve(totalSize);
-  for (int i = 0; i < num_selections_; ++i) {
+  for (int i = 0; i <= index; ++i) {
+    res->selection.push_back(geometry_msgs::msg::PolygonStamped()); // Initialize each element in the selection array
     if(points_[i].empty()) continue;
+    res->selection[i].header.frame_id = context_->getFixedFrame().toStdString();
     for (const Ogre::Vector3& pt : points_[i])
     {
-      geometry_msgs::msg::PointStamped msg;
-      msg.header.frame_id = context_->getFixedFrame().toStdString();
-      msg.point.x = pt.x;
-      msg.point.y = pt.y;
-      msg.point.z = pt.z;
-      res->selection.push_back(msg);
+      geometry_msgs::msg::Point32 msg;
+      msg.x = pt.x;
+      msg.y = pt.y;
+      msg.z = pt.z;
+      res->selection[i].polygon.points.push_back(msg);
     }
   }
 }
-
+  
 void PolygonSelectionTool::updateVisual()
 {
   pts_material_->setPointSize(pt_size_property_->getFloat());
-
   // Add the points to the display when not in lasso mode
   if (!lasso_mode_property_->getBool())
   {
-    pts_vis_[sel]->clear();
-    pts_vis_[sel]->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_POINT_LIST);
-    for (std::size_t i = 0; i < points_[sel].size(); ++i)
+    pts_vis_[index]->clear();
+    pts_vis_[index]->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_POINT_LIST);
+    for (std::size_t i = 0; i < points_[index].size(); ++i)
     {
-      pts_vis_[sel]->position(points_[sel][i]);
+      pts_vis_[index]->position(points_[index][i]);
     }
-    pts_vis_[sel]->end();
-
+    pts_vis_[index]->end();
     // Set the custom material
-    pts_vis_[sel]->setMaterial(0, pts_material_);
+    pts_vis_[index]->setMaterial(0, pts_material_);
   }
-
   // Add the polygon lines
-  if (points_[sel].size() > 1)
+  if (points_[index].size() > 1)
   {
-    lines_vis_[sel]->clear();
-    lines_vis_[sel]->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
+    lines_vis_[index]->clear();
+    lines_vis_[index]->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
 
-    for (std::size_t i = 0; i < points_[sel].size() - 1; ++i)
+    for (std::size_t i = 0; i < points_[index].size() - 1; ++i)
     {
-      lines_vis_[sel]->position(points_[sel].at(i));
-      lines_vis_[sel]->position(points_[sel].at(i + 1));
+      lines_vis_[index]->position(points_[index].at(i));
+      lines_vis_[index]->position(points_[index].at(i + 1));
     }
 
     // Close the polygon
-    if (points_[sel].size() > 2 && close_loop_property_->getBool())
+    if (points_[index].size() > 2 && close_loop_property_->getBool())
     {
-      lines_vis_[sel]->position(points_[sel].back());
-      lines_vis_[sel]->position(points_[sel].front());
+      lines_vis_[index]->position(points_[index].back());
+      lines_vis_[index]->position(points_[index].front());
     }
 
-    lines_vis_[sel]->end();
+    lines_vis_[index]->end();
 
-    lines_vis_[sel]->setMaterial(0, lines_material_);
-  }
+    lines_vis_[index]->setMaterial(0, lines_material_);
+    }
 }
 
 }  // namespace rviz_polygon_selection_tool
