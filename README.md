@@ -15,7 +15,8 @@ Rviz tool plugin for creating polygon selections
 Toggle betweeen the modes by selecting the `Lasso mode` check box in the tool properties panel
 
 ### Features
-- **Right mouse button click**: deactivate the tool
-- **Middle mouse button click**: erase current selection
-- **Shortcut `p`**: activate the tool
+- **Right mouse button click**: new polygon
+- **Middle mouse button click**: erase current polygon selection
+- **Shortcut `delete`**: clears selections
+- **Shortcut `p`**: activate/deactivate the tool
 - **Toggle loop closure**: draws/hides a line connecting the last and first waypoints (see tool properties panel)
