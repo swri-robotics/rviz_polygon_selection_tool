@@ -9,8 +9,15 @@
 #include <vector>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 
+namespace rviz_rendering
+{
+  class MaterialManager;
+  class MovableText;
+} // namespace rviz_rendering
+
 namespace rviz_common
 {
+class Display;
 namespace properties
 {
 class BoolProperty;
@@ -42,10 +49,14 @@ public Q_SLOTS:
   void updatePtsSize();
   void updateLinesColor();
   void updateVisual();
+  void updateTextVisibility();
+  void updateTextSize();
 
 private:
   int index = 0;
   rclcpp::Node::SharedPtr node;
+  Ogre::Vector3 getPolygonAvg();
+  void updateText();
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
 
   rviz_common::properties::BoolProperty* lasso_mode_property_;
@@ -53,6 +64,8 @@ private:
   rviz_common::properties::ColorProperty* pt_color_property_;
   rviz_common::properties::ColorProperty* line_color_property_;
   rviz_common::properties::FloatProperty* pt_size_property_;
+  rviz_common::properties::BoolProperty* text_visibility_property_;
+  rviz_common::properties::FloatProperty* text_size_property_;
 
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
@@ -61,6 +74,9 @@ private:
   std::vector<Ogre::ManualObject*> lines_vis_;
   Ogre::MaterialPtr pts_material_;
   Ogre::MaterialPtr lines_material_;
+  Ogre::SceneNode* start_text_node_;
+  std::vector<Ogre::SceneNode *> text_node_;
+  std::vector<rviz_rendering::MovableText *> texts_;
 };
 
 }  // namespace rviz_polygon_selection_tool
