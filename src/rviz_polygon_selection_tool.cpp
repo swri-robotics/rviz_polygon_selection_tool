@@ -60,6 +60,9 @@ void PolygonSelectionTool::onInitialize()
 
   text_size_property_ = new rviz_common::properties::FloatProperty("Text Size", 0.015, "Height of the text display (m)", 
                                                                   getPropertyContainer(), SLOT(updateTextSize()), this);
+
+  points_gap_ = new rviz_common::properties::FloatProperty("Point Generation Gap",0.002, "Separation in meters between the last point and the new one",
+                                                                  getPropertyContainer(), SLOT(0), this);
   
   start_text_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode();
   
@@ -102,7 +105,10 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
       // Check if the index is within the range of points_
       if (index < int(points_.size())) {
         // Insert position into the inner vector at the current index
-        points_[index].emplace_back(position);
+        if (sqrt(pow(points_[index].back().x - position.x, 2) + pow(points_[index].back().y - position.y, 2)) > points_gap_->getFloat())
+        {
+          points_[index].emplace_back(position);
+        }
       } else {
         // Create a new inner vector and insert position into it
         points_.emplace_back(1, position);
