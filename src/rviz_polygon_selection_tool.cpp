@@ -78,7 +78,7 @@ void PolygonSelectionTool::onInitialize()
   text_size_property_ = new rviz_common::properties::FloatProperty(
       "Text Size", 0.015, "Height of the text display (m)", getPropertyContainer(), SLOT(updateTextSize()), this);
 
-  points_gap_ = new rviz_common::properties::FloatProperty(
+  points_gap_size_property_ = new rviz_common::properties::FloatProperty(
       "Point Generation Gap", 0.002, "Separation between adjacent points in a polygon (m)", getPropertyContainer());
 
   points_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode("points");
@@ -175,7 +175,7 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
       if (lasso_mode_property_->getBool() && !points_.back().empty())
       {
         const Ogre::Vector3& last_point = points_.back().back();
-        if (last_point.squaredDistance(position) < std::pow(points_gap_->getFloat(), 2.0))
+        if (last_point.squaredDistance(position) < std::pow(points_gap_size_property_->getFloat(), 2.0))
           return rviz_common::Tool::Render;
       }
       points_.back().push_back(position);

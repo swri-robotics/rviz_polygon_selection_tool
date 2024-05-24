@@ -60,7 +60,7 @@ private:
   rviz_common::properties::FloatProperty* pt_size_property_;
   rviz_common::properties::BoolProperty* text_visibility_property_;
   rviz_common::properties::FloatProperty* text_size_property_;
-  rviz_common::properties::FloatProperty* points_gap_;
+  rviz_common::properties::FloatProperty* points_gap_size_property_;
 
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
