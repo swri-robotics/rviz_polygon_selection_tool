@@ -2,7 +2,7 @@
 Rviz tool plugin for creating polygon selections
 
 [![license - apache 2.0](https://img.shields.io/:license-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI](https://github.com/marip8/rviz_polygon_selection_tool/actions/workflows/main.yml/badge.svg)](https://github.com/marip8/rviz_polygon_selection_tool/actions/workflows/main.yml)
+[![CI](https://github.com/swri-robotics/rviz_polygon_selection_tool/actions/workflows/main.yml/badge.svg)](https://github.com/marip8/rviz_polygon_selection_tool/actions/workflows/main.yml)
 
 ## Operation
 
