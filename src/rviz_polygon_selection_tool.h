@@ -5,6 +5,12 @@
 #include <rviz_common/tool.hpp>
 #include <rclcpp/service.hpp>
 
+namespace rviz_rendering
+{
+class MaterialManager;
+class MovableText;
+}  // namespace rviz_rendering
+
 namespace rviz_common
 {
 namespace properties
@@ -25,34 +31,48 @@ class PolygonSelectionTool : public rviz_common::Tool
 
 public:
   PolygonSelectionTool();
+  virtual ~PolygonSelectionTool();
 
   void onInitialize() override;
-  void activate() override{};
-  void deactivate() override{};
+  void activate() override;
+  void deactivate() override;
+  void newPolygon();
   int processMouseEvent(rviz_common::ViewportMouseEvent& event) override;
+  int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
 
 public Q_SLOTS:
-  void updatePtsColor();
-  void updatePtsSize();
+  void updatePointsColor();
+  void updatePointsSize();
   void updateLinesColor();
   void updateVisual();
+  void updateTextVisibility();
+  void updateTextSize();
 
 private:
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
+  void updateText();
+  void removeDisplays();
 
   rviz_common::properties::BoolProperty* lasso_mode_property_;
   rviz_common::properties::BoolProperty* close_loop_property_;
   rviz_common::properties::ColorProperty* pt_color_property_;
   rviz_common::properties::ColorProperty* line_color_property_;
   rviz_common::properties::FloatProperty* pt_size_property_;
+  rviz_common::properties::BoolProperty* text_visibility_property_;
+  rviz_common::properties::FloatProperty* text_size_property_;
+  rviz_common::properties::FloatProperty* points_gap_size_property_;
 
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
-  std::vector<Ogre::Vector3> points_;
-  Ogre::ManualObject* pts_vis_{ nullptr };
-  Ogre::ManualObject* lines_vis_{ nullptr };
-  Ogre::MaterialPtr pts_material_{ nullptr };
-  Ogre::MaterialPtr lines_material_{ nullptr };
+  /** @brief Polygon points in 3D space*/
+  std::vector<std::vector<Ogre::Vector3>> points_;
+
+  // Visualizations
+  Ogre::SceneNode* points_node_;
+  Ogre::SceneNode* lines_node_;
+  Ogre::SceneNode* text_node_;
+  Ogre::MaterialPtr points_material_;
+  Ogre::MaterialPtr lines_material_;
 };
 
 }  // namespace rviz_polygon_selection_tool
