@@ -7,9 +7,9 @@
 
 namespace rviz_rendering
 {
-  class MaterialManager;
-  class MovableText;
-} // namespace rviz_rendering
+class MaterialManager;
+class MovableText;
+}  // namespace rviz_rendering
 
 namespace rviz_common
 {
