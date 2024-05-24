@@ -41,8 +41,8 @@ public:
   int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
 
 public Q_SLOTS:
-  void updatePtsColor();
-  void updatePtsSize();
+  void updatePointsColor();
+  void updatePointsSize();
   void updateLinesColor();
   void updateVisual();
   void updateTextVisibility();
@@ -68,10 +68,10 @@ private:
   std::vector<std::vector<Ogre::Vector3>> points_;
 
   // Visualizations
-  Ogre::SceneNode* pts_vis_;
-  Ogre::SceneNode* lines_vis_;
-  Ogre::SceneNode* text_vis_;
-  Ogre::MaterialPtr pts_material_;
+  Ogre::SceneNode* points_node_;
+  Ogre::SceneNode* lines_node_;
+  Ogre::SceneNode* text_node_;
+  Ogre::MaterialPtr points_material_;
   Ogre::MaterialPtr lines_material_;
 };
 
