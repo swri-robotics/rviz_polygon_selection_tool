@@ -30,6 +30,21 @@ PolygonSelectionTool::PolygonSelectionTool() : rviz_common::Tool()
   shortcut_key_ = 'p';
 }
 
+PolygonSelectionTool::~PolygonSelectionTool()
+{
+  // Remove materials
+  Ogre::MaterialManager::getSingleton().remove(pts_material_);
+  Ogre::MaterialManager::getSingleton().remove(lines_material_);
+
+  // Remove displays
+  removeDisplays();
+
+  // Remove top level scene nodes
+  scene_manager_->getRootSceneNode()->removeAndDestroyChild(pts_vis_);
+  scene_manager_->getRootSceneNode()->removeAndDestroyChild(lines_vis_);
+  scene_manager_->getRootSceneNode()->removeAndDestroyChild(text_vis_);
+}
+
 void PolygonSelectionTool::onInitialize()
 {
   rclcpp::Node::SharedPtr node = context_->getRosNodeAbstraction().lock()->get_raw_node();
@@ -65,9 +80,20 @@ void PolygonSelectionTool::onInitialize()
   points_gap_ = new rviz_common::properties::FloatProperty("Point Generation Gap", 0.002, "Separation between adjacent points in a polygon (m)",
                                                            getPropertyContainer());
   
-  start_text_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode();
+  pts_vis_ = scene_manager_->getRootSceneNode()->createChildSceneNode("points");
+  lines_vis_ = scene_manager_->getRootSceneNode()->createChildSceneNode("lines");
+  text_vis_ = scene_manager_->getRootSceneNode()->createChildSceneNode("text");
   
   newPolygon();
+}
+
+void PolygonSelectionTool::activate()
+{
+}
+
+void PolygonSelectionTool::deactivate()
+{
+  updateText();
 }
 
 void PolygonSelectionTool::newPolygon()
@@ -78,29 +104,62 @@ void PolygonSelectionTool::newPolygon()
 
   // Add the points visualization
   Ogre::ManualObject* pts = scene_manager_->createManualObject("points_" + std::to_string(index));
-  pts_vis_.push_back(pts);
-  scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(pts);
+  pts_vis_->attachObject(pts);
 
   // Add the lines visualization
   Ogre::ManualObject* lines = scene_manager_->createManualObject("lines_" + std::to_string(index));
-  lines_vis_.push_back(lines);
-  scene_manager_->getRootSceneNode()->createChildSceneNode()->attachObject(lines);
+  lines_vis_->attachObject(lines);
 
   // Add the text
-  auto* text = new rviz_rendering::MovableText("not initialized", "Liberation Sans", 0.05, Ogre::ColourValue::Blue);
+  std::string caption = "#" + std::to_string(points_.size());
+  auto* text = new rviz_rendering::MovableText(caption, "Liberation Sans", text_size_property_->getFloat(), Ogre::ColourValue::Blue);
   text->setVisible(false);
   text->setTextAlignment(rviz_rendering::MovableText::H_CENTER, rviz_rendering::MovableText::V_ABOVE);
-  texts_.push_back(text);
 
-  Ogre::SceneNode* node = start_text_node_->createChildSceneNode();
-  node->attachObject(text);
-  text_node_.push_back(node);
+  // Attach the text to a movable child scene node underneath the main text scene node
+  text_vis_->createChildSceneNode()->attachObject(text);
 
   // Update the materials
   updatePtsSize();
   updatePtsColor();
   updateLinesColor();
   updateTextSize();
+}
+
+void PolygonSelectionTool::removeDisplays()
+{
+  // Remove the displays
+  // Points
+  {
+    std::vector<Ogre::MovableObject*> objects = pts_vis_->getAttachedObjects();
+    pts_vis_->removeAndDestroyAllChildren();
+
+    // Delete the objects attached to this node
+    for(auto object : objects)
+      scene_manager_->destroyManualObject(object->getName());
+  }
+
+  // Lines
+  {
+    std::vector<Ogre::MovableObject*> objects = lines_vis_->getAttachedObjects();
+    lines_vis_->removeAndDestroyAllChildren();
+
+            // Delete the objects attached to this node
+    for (Ogre::MovableObject* object : objects)
+      scene_manager_->destroyManualObject(object->getName());
+  }
+
+  // Text
+  for(Ogre::Node* child : text_vis_->getChildren())
+  {
+    auto* child_scene = dynamic_cast<Ogre::SceneNode*>(child);
+    std::vector<Ogre::MovableObject*> objects = child_scene->getAttachedObjects();
+    child_scene->removeAndDestroyAllChildren();
+
+    for(Ogre::MovableObject* object : objects)
+      delete object;
+  }
+  text_vis_->removeAndDestroyAllChildren();
 }
 
 int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& event)
@@ -126,9 +185,29 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
     // Clear the selection
     if (points_.back().size() > 1)
     {
+      // Clear the points data
       points_.back().clear();
-      lines_vis_.back()->clear();
-      pts_vis_.back()->clear();
+
+      // Clear the points visualization
+      {
+        auto* pts_ = dynamic_cast<Ogre::ManualObject*>(pts_vis_->getAttachedObjects().back());
+        if(pts_)
+          pts_->clear();
+      }
+
+      // Clear the lines visualization
+      {
+        auto* lines = dynamic_cast<Ogre::ManualObject*>(lines_vis_->getAttachedObjects().back());
+        if(lines)
+          lines->clear();
+      }
+
+      // Make the text object invisible
+      {
+        auto* text_node = dynamic_cast<Ogre::SceneNode*>(text_vis_->getChildren().back());
+        if(text_node)
+          text_node->setVisible(false);
+      }
     }
   }
   else if (event.rightUp())
@@ -142,67 +221,22 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
   return rviz_common::Tool::Render;
 }
 
-// int PolygonSelectionTool::processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* /*panel*/)
-// {
-//   switch (event->key() )
-//   {
-//     case Qt::Key_Delete:
-//       // Check if the vector is not null and clear its data
-//       if (!points_.empty())
-//       {
-//         for (std::vector<Ogre::Vector3>& innerVec : points_) {
-//             // Check if the inner vector is not null and clear its data
-//             innerVec.clear();
-//         }
-//         points_.clear();
-//       }
+int PolygonSelectionTool::processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* /*panel*/)
+{
+  switch (event->key())
+  {
+    case Qt::Key_Delete:
+    case Qt::Key_Backspace:
+      points_.clear();
+      removeDisplays();
+      newPolygon();
+      break;
+    default:
+      break;
+  }
 
-//       for (size_t i = 0; i < pts_vis_.size(); ++i)
-//       {
-//         if (pts_vis_[i]) {
-//           Ogre::SceneNode* parentNode = pts_vis_[i]->getParentSceneNode();
-//           if (parentNode) {
-//               // Detach the ManualObject from its parent scene node
-//               parentNode->detachObject(pts_vis_[i]);
-//               // Remove the ManualObject from the scene manager
-//               scene_manager_->destroyManualObject(pts_vis_[i]);
-//               // Remove the corresponding scene node from the scene manager
-//               scene_manager_->destroySceneNode(parentNode);
-//           }
-//         }
-//       }
-//       pts_vis_.clear();
-
-//       for (size_t i = 0; i < lines_vis_.size(); ++i)
-//       {
-//         if (lines_vis_[i])
-//         {
-//           Ogre::SceneNode* parentNode = lines_vis_[i]->getParentSceneNode();
-//           if (parentNode) {
-//               // Detach the ManualObject from its parent scene node
-//               parentNode->detachObject(lines_vis_[i]);
-//               // Remove the ManualObject from the scene manager
-//               scene_manager_->destroyManualObject(lines_vis_[i]);
-//               // Remove the corresponding scene node from the scene manager
-//               scene_manager_->destroySceneNode(parentNode);
-//           }
-//         }
-//       }
-//       lines_vis_.clear();
-
-//       for (Ogre::SceneNode* node : text_node_)
-//       {
-//         node->detachAllObjects();
-//       }
-//       text_node_.clear();
-//       texts_.clear();
-
-      
-//       index_ = 0;
-//       newPolygon();
-//       break;
-//   }
-// }
+  return rviz_common::Tool::Render;
+}
 
 void PolygonSelectionTool::updatePtsColor()
 {
@@ -222,18 +256,29 @@ void PolygonSelectionTool::updatePtsSize()
 void PolygonSelectionTool::updateTextSize()
 {
   const float height = text_size_property_->getFloat();
-  for (rviz_rendering::MovableText* text : texts_)
+  for (Ogre::Node* child : text_vis_->getChildren())
   {
-    text->setCharacterHeight(height);
+    auto child_scene = dynamic_cast<Ogre::SceneNode*>(child);
+    if(child_scene)
+    {
+      for(Ogre::MovableObject* child_scene_object : child_scene->getAttachedObjects())
+      {
+        auto* text = dynamic_cast<rviz_rendering::MovableText*>(child_scene_object);
+        if(text)
+          text->setCharacterHeight(height);
+      }
+    }
   }
 }
 
 void PolygonSelectionTool::updateTextVisibility()
 {
   const bool text_visible = text_visibility_property_->getBool();
-  for (Ogre::SceneNode* node : text_node_)
+  for (Ogre::Node* child : text_vis_->getChildren())
   {
-    node->setVisible(text_visible);
+    auto* child_scene = dynamic_cast<Ogre::SceneNode*>(child);
+    if(child_scene)
+      child_scene->setVisible(text_visible);
   }
   text_size_property_->setHidden(!text_visible);
 }
@@ -241,20 +286,28 @@ void PolygonSelectionTool::updateTextVisibility()
 void PolygonSelectionTool::updateText()
 {
   const bool show = points_.back().size() > 1;
-  text_node_.back()->setVisible(show);
-  if (show)
-  {
-    // Update the caption of the text
-    texts_.back()->setCaption("Polygon#" + std::to_string(texts_.size() - 1));
+  if(!show)
+    return;
 
-    // Set the position of the text node as the center of the points
-    Ogre::Vector3 text_pos(0.0, 0.0, 0.0);
-    for (const Ogre::Vector3& point : points_.back())
-      text_pos += point;
-    text_pos /= static_cast<Ogre::Real>(points_.back().size());
+  // Get the last child scene node from the top-level text scene node
+  auto* last_child_scene = dynamic_cast<Ogre::SceneNode*>(text_vis_->getChildren().back());
+  if(!last_child_scene || last_child_scene->numAttachedObjects() != 1)
+    return;
 
-    text_node_.back()->setPosition(text_pos);
-  }
+  // Get the first attached object of the last child scene object
+  auto* text = dynamic_cast<rviz_rendering::MovableText*>(last_child_scene->getAttachedObject(0));
+  if (text == nullptr)
+    return;
+
+  text->setVisible(true);
+
+  // Set the position of the text node as the center of the points
+  Ogre::Vector3 text_pos(0.0, 0.0, 0.0);
+  for (const Ogre::Vector3& point : points_.back())
+    text_pos += point;
+  text_pos /= static_cast<Ogre::Real>(points_.back().size());
+
+  last_child_scene->setPosition(text_pos);
 }
 
 void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr /*req*/,
@@ -284,41 +337,51 @@ void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr 
 void PolygonSelectionTool::updateVisual()
 {
   pts_material_->setPointSize(pt_size_property_->getFloat());
+
+  Ogre::ManualObject* pts = dynamic_cast<Ogre::ManualObject*>(pts_vis_->getAttachedObjects().back());
+  if(!pts)
+    return;
+
+  Ogre::ManualObject* lines = dynamic_cast<Ogre::ManualObject*>(lines_vis_->getAttachedObjects().back());
+  if(!lines)
+    return;
+
   // Add the points to the display when not in lasso mode
   if (!lasso_mode_property_->getBool())
   {
-    pts_vis_.back()->clear();
-    pts_vis_.back()->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_POINT_LIST);
+    pts->clear();
+    pts->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_POINT_LIST);
     for (std::size_t i = 0; i < points_.back().size(); ++i)
     {
-      pts_vis_.back()->position(points_.back()[i]);
+      pts->position(points_.back()[i]);
     }
-    pts_vis_.back()->end();
+    pts->end();
     // Set the custom material (Ignore this: class "Ogre::ManualObject" has no member "setMaterial")
-    pts_vis_.back()->setMaterial(0, pts_material_);
+    pts->setMaterial(0, pts_material_);
   }
+
   // Add the polygon lines
   if (int(points_.back().size()) > 1)
   {
-    lines_vis_.back()->clear();
-    lines_vis_.back()->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
+    lines->clear();
+    lines->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
 
     for (std::size_t i = 0; i < points_.back().size() - 1; ++i)
     {
-      lines_vis_.back()->position(points_.back().at(i));
-      lines_vis_.back()->position(points_.back().at(i + 1));
+      lines->position(points_.back().at(i));
+      lines->position(points_.back().at(i + 1));
     }
 
     // Close the polygon
     if (int(points_.back().size()) > 2 && close_loop_property_->getBool())
     {
-      lines_vis_.back()->position(points_.back().back());
-      lines_vis_.back()->position(points_.back().front());
+      lines->position(points_.back().back());
+      lines->position(points_.back().front());
     }
 
-    lines_vis_.back()->end();
+    lines->end();
     // Set the custom material (Ignore this: class "Ogre::ManualObject" has no member "setMaterial")
-    lines_vis_.back()->setMaterial(0, lines_material_);
+    lines->setMaterial(0, lines_material_);
   }
 }
 

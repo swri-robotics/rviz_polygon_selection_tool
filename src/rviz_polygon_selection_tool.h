@@ -31,13 +31,14 @@ class PolygonSelectionTool : public rviz_common::Tool
 
 public:
   PolygonSelectionTool();
+  virtual ~PolygonSelectionTool();
 
   void onInitialize() override;
-  void activate() override{};
-  void deactivate() override{};
+  void activate() override;
+  void deactivate() override;
   void newPolygon();
   int processMouseEvent(rviz_common::ViewportMouseEvent& event) override;
-  // int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
+  int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
 
 public Q_SLOTS:
   void updatePtsColor();
@@ -50,6 +51,7 @@ public Q_SLOTS:
 private:
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
   void updateText();
+  void removeDisplays();
 
   rviz_common::properties::BoolProperty* lasso_mode_property_;
   rviz_common::properties::BoolProperty* close_loop_property_;
@@ -66,13 +68,11 @@ private:
   std::vector<std::vector<Ogre::Vector3>> points_;
 
   // Visualizations
-  std::vector<Ogre::ManualObject*> pts_vis_;
-  std::vector<Ogre::ManualObject*> lines_vis_;
+  Ogre::SceneNode* pts_vis_;
+  Ogre::SceneNode* lines_vis_;
+  Ogre::SceneNode* text_vis_;
   Ogre::MaterialPtr pts_material_;
   Ogre::MaterialPtr lines_material_;
-  Ogre::SceneNode* start_text_node_;
-  std::vector<Ogre::SceneNode*> text_node_;
-  std::vector<rviz_rendering::MovableText*> texts_;
 };
 
 }  // namespace rviz_polygon_selection_tool
