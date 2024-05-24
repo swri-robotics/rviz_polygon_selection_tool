@@ -64,7 +64,7 @@ private:
 
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
-  /** @brief */
+  /** @brief Polygon points in 3D space*/
   std::vector<std::vector<Ogre::Vector3>> points_;
 
   // Visualizations
