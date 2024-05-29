@@ -172,7 +172,7 @@ int PolygonSelectionTool::processMouseEvent(rviz_common::ViewportMouseEvent& eve
     Ogre::Vector3 position;
     if (context_->getViewPicker()->get3DPoint(event.panel, event.x, event.y, position))
     {
-      if (lasso_mode_property_->getBool() && !points_.back().empty())
+      if (!points_.back().empty())
       {
         const Ogre::Vector3& last_point = points_.back().back();
         if (last_point.squaredDistance(position) < std::pow(points_gap_size_property_->getFloat(), 2.0))
