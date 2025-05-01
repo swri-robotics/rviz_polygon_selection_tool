@@ -2,6 +2,15 @@
 Changelog for package rviz_polygon_selection_tool
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add separate executor and callback group (`#9 <https://github.com/marip8/rviz_polygon_selection_tool/issues/9>`_)
+  * Updated tool to have its own executor such that service clients in the Rviz node (e.g., in other panels, tools) can call its service
+  * Updated to support rolling
+* Add Jazzy CI job (`#10 <https://github.com/marip8/rviz_polygon_selection_tool/issues/10>`_)
+* Bug fix for Point Generation Gap to work while Lasso Mode is not activated (`#8 <https://github.com/marip8/rviz_polygon_selection_tool/issues/8>`_)
+* Contributors: BryanMqz, Michael Ripperger
+
 1.0.0 (2024-05-24)
 ------------------
 * Multiple polygons rviz selection tool (`#7 <https://github.com/marip8/rviz_polygon_selection_tool/issues/7>`_)
