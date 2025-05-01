@@ -2,8 +2,8 @@
 Changelog for package rviz_polygon_selection_tool
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.0 (2025-05-01)
+------------------
 * Add separate executor and callback group (`#9 <https://github.com/marip8/rviz_polygon_selection_tool/issues/9>`_)
   * Updated tool to have its own executor such that service clients in the Rviz node (e.g., in other panels, tools) can call its service
   * Updated to support rolling
