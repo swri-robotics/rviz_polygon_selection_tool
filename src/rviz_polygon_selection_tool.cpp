@@ -58,9 +58,17 @@ void PolygonSelectionTool::onInitialize()
   executor_callback_group_ = node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   executor_.add_callback_group(executor_callback_group_, node->get_node_base_interface());
 
+#ifdef QOS_REQUIRED_IN_SERVICE
+  rclcpp::QoS qos(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT, 1),
+                  rmw_qos_profile_services_default);
+  server_ = node->create_service<srv::GetSelection>(
+      "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2),
+      qos, executor_callback_group_);
+#else
   server_ = node->create_service<srv::GetSelection>(
       "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2),
       rmw_qos_profile_services_default, executor_callback_group_);
+#endif
 
   executor_thread_ = std::thread([&]() { executor_.spin(); });
 #else
