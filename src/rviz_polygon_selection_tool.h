@@ -5,6 +5,12 @@
 #include <rviz_common/tool.hpp>
 #include <rclcpp/service.hpp>
 
+#include "version_check.hpp"
+#ifdef CALLBACK_GROUP_SUPPORTED
+#include <rclcpp/executors/single_threaded_executor.hpp>
+#include <thread>
+#endif
+
 namespace rviz_rendering
 {
 class MaterialManager;
@@ -61,6 +67,12 @@ private:
   rviz_common::properties::BoolProperty* text_visibility_property_;
   rviz_common::properties::FloatProperty* text_size_property_;
   rviz_common::properties::FloatProperty* points_gap_size_property_;
+
+#ifdef CALLBACK_GROUP_SUPPORTED
+  std::thread executor_thread_;
+  rclcpp::executors::SingleThreadedExecutor executor_;
+  rclcpp::CallbackGroup::SharedPtr executor_callback_group_;
+#endif
 
   rclcpp::Service<srv::GetSelection>::SharedPtr server_;
 
