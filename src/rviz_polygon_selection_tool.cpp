@@ -77,7 +77,12 @@ void PolygonSelectionTool::onInitialize()
 #endif
 
   points_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("points_material");
+  points_material_->setDepthCheckEnabled(false);
+  points_material_->setDepthWriteEnabled(false);
+
   lines_material_ = rviz_rendering::MaterialManager::createMaterialWithLighting("lines_material");
+  lines_material_->setDepthCheckEnabled(false);
+  lines_material_->setDepthWriteEnabled(false);
 
   // Add the properties
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
@@ -131,10 +136,12 @@ void PolygonSelectionTool::newPolygon()
 
   // Add the points visualization
   Ogre::ManualObject* points = scene_manager_->createManualObject("points_" + std::to_string(index));
+  points->setRenderQueueGroup(Ogre::RenderQueueGroupID::RENDER_QUEUE_OVERLAY);
   points_node_->attachObject(points);
 
   // Add the lines visualization
   Ogre::ManualObject* lines = scene_manager_->createManualObject("lines_" + std::to_string(index));
+  lines->setRenderQueueGroup(Ogre::RenderQueueGroupID::RENDER_QUEUE_OVERLAY);
   lines_node_->attachObject(lines);
 
   // Add the text
@@ -143,6 +150,9 @@ void PolygonSelectionTool::newPolygon()
                                                Ogre::ColourValue::Blue);
   text->setVisible(false);
   text->setTextAlignment(rviz_rendering::MovableText::H_CENTER, rviz_rendering::MovableText::V_ABOVE);
+  text->setRenderQueueGroup(Ogre::RenderQueueGroupID::RENDER_QUEUE_OVERLAY);
+  text->getMaterial()->setDepthCheckEnabled(false);
+  text->getMaterial()->setDepthWriteEnabled(false);
 
   // Attach the text to a movable child scene node underneath the main text scene node
   text_node_->createChildSceneNode()->attachObject(text);
