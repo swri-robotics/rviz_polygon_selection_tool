@@ -9,5 +9,10 @@
       Polygon selection tool with circle cursor
     </description>
   </class>
+  <class name="rviz_polygon_selection_tool/MeshPolygonSelectionTool" type="rviz_polygon_selection_tool::MeshPolygonSelectionTool" base_class_type="rviz_common::Tool">
+    <description>
+      Polygon selection tool with mesh cursor
+    </description>
+  </class>
 </library>
 
