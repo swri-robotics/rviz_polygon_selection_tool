@@ -30,9 +30,10 @@ rosidl_generate_interfaces(
   geometry_msgs)
 rosidl_get_typesupport_target(msgs_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-qt5_wrap_cpp(moc src/rviz_polygon_selection_tool.h)
+qt5_wrap_cpp(moc src/rviz_polygon_selection_tool.h src/circle_polygon_selection_tool.h)
 
-add_library(${PROJECT_NAME}_plugin SHARED src/rviz_polygon_selection_tool.cpp src/rviz_polygon_selection_tool.h ${moc})
+add_library(${PROJECT_NAME}_plugin SHARED src/rviz_polygon_selection_tool.cpp src/circle_polygon_selection_tool.cpp
+                                          ${moc})
 target_link_libraries(
   ${PROJECT_NAME}_plugin
   PUBLIC ${msgs_target}

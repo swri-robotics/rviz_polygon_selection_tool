@@ -4,5 +4,10 @@
       Rviz tool for collecting a polygon selection boundary
     </description>
   </class>
+  <class name="rviz_polygon_selection_tool/CirclePolygonSelectionTool" type="rviz_polygon_selection_tool::CirclePolygonSelectionTool" base_class_type="rviz_common::Tool">
+    <description>
+      Polygon selection tool with circle cursor
+    </description>
+  </class>
 </library>
 
