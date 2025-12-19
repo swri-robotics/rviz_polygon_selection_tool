@@ -107,6 +107,10 @@ void PolygonSelectionTool::onInitialize()
   points_gap_size_property_ = new rviz_common::properties::FloatProperty(
       "Point Generation Gap", 0.002, "Separation between adjacent points in a polygon (m)", getPropertyContainer());
 
+  render_as_overlay_property_ = new rviz_common::properties::BoolProperty(
+      "Render as Overlay", false, "Render the polygon points and lines on top of all other geometry",
+      getPropertyContainer(), SLOT(updateRenderAsOverlay()), this);
+
   points_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode("points");
   lines_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode("lines");
   text_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode("text");
@@ -152,6 +156,7 @@ void PolygonSelectionTool::newPolygon()
   updatePointsColor();
   updateLinesColor();
   updateTextSize();
+  updateRenderAsOverlay();
 }
 
 void PolygonSelectionTool::removeDisplays()
@@ -336,6 +341,54 @@ void PolygonSelectionTool::updateText()
   text_pos /= static_cast<Ogre::Real>(points_.back().size());
 
   last_child_scene->setPosition(text_pos);
+}
+
+void PolygonSelectionTool::updateRenderAsOverlay()
+{
+  const bool render_as_overlay = render_as_overlay_property_->getBool();
+  Ogre::RenderQueueGroupID render_id =
+      render_as_overlay ? Ogre::RenderQueueGroupID::RENDER_QUEUE_OVERLAY : Ogre::RenderQueueGroupID::RENDER_QUEUE_MAIN;
+
+  // Lines
+  lines_material_->setDepthCheckEnabled(!render_as_overlay);
+  lines_material_->setDepthWriteEnabled(!render_as_overlay);
+  for (auto object : lines_node_->getAttachedObjects())
+  {
+    auto lines = dynamic_cast<Ogre::ManualObject*>(object);
+    if (!lines)
+      continue;
+    lines->setRenderQueueGroup(render_id);
+  }
+
+  // Points
+  points_material_->setDepthCheckEnabled(!render_as_overlay);
+  points_material_->setDepthWriteEnabled(!render_as_overlay);
+  for (auto object : points_node_->getAttachedObjects())
+  {
+    auto points = dynamic_cast<Ogre::ManualObject*>(object);
+    if (!points)
+      continue;
+    points->setRenderQueueGroup(render_id);
+  }
+
+  // Text
+  for (Ogre::Node* child : text_node_->getChildren())
+  {
+    auto scene_node = dynamic_cast<Ogre::SceneNode*>(child);
+    if (!scene_node)
+      continue;
+
+    for (auto object : scene_node->getAttachedObjects())
+    {
+      auto text = dynamic_cast<rviz_rendering::MovableText*>(object);
+      if (!text)
+        continue;
+
+      text->setRenderQueueGroup(render_id);
+      text->getMaterial()->setDepthCheckEnabled(!render_as_overlay);
+      text->getMaterial()->setDepthWriteEnabled(!render_as_overlay);
+    }
+  }
 }
 
 void PolygonSelectionTool::callback(const srv::GetSelection::Request::SharedPtr /*req*/,

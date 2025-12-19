@@ -53,6 +53,7 @@ public Q_SLOTS:
   void updateVisual();
   void updateTextVisibility();
   void updateTextSize();
+  void updateRenderAsOverlay();
 
 private:
   void callback(const srv::GetSelection::Request::SharedPtr, const srv::GetSelection::Response::SharedPtr res);
@@ -67,6 +68,7 @@ private:
   rviz_common::properties::BoolProperty* text_visibility_property_;
   rviz_common::properties::FloatProperty* text_size_property_;
   rviz_common::properties::FloatProperty* points_gap_size_property_;
+  rviz_common::properties::BoolProperty* render_as_overlay_property_;
 
 #ifdef CALLBACK_GROUP_SUPPORTED
   std::thread executor_thread_;
