@@ -1,0 +1,42 @@
+name: Ubuntu [Humble, Jazzy, Rolling]
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+  release:
+    types:
+      - released
+
+jobs:
+  ci:
+    name: ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [humble, jazzy, rolling]
+    container:
+      image: ros:${{ matrix.distro }}
+      env:
+        CCACHE_DIR: ${{ github.workspace }}/${{ matrix.distro }}/.ccache
+        DEBIAN_FRONTEND: noninteractive
+        TZ: Etc/UTC
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: target_ws/src
+
+      - name: Build and Tests
+        uses: tesseract-robotics/colcon-action@v14
+        with:
+          ccache-prefix: ${{ matrix.distro }}
+          add-ros-ppa: false
+          before-script: source /opt/ros/${{ matrix.distro }}/setup.bash
+          target-path: target_ws/src
+          target-args: --cmake-args -DCMAKE_BUILD_TYPE=Debug
