@@ -15,32 +15,30 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-set(CMAKE_AUTOMOC ON)
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(rviz_common REQUIRED)
+find_package(rviz_rendering REQUIRED)
 find_package(pluginlib REQUIRED)
-
-# Include the 'rosidl_get_typesupport_target' target on distros earlier than Galactic
-if(DEFINED ENV{ROS_DISTRO})
-  if("$ENV{ROS_DISTRO}" STREQUAL "foxy")
-    include(cmake/macros.cmake)
-  endif()
-endif()
 
 rosidl_generate_interfaces(
   ${PROJECT_NAME}
   "srv/GetSelection.srv"
   DEPENDENCIES
   geometry_msgs)
-
-add_library(${PROJECT_NAME}_plugin SHARED src/rviz_polygon_selection_tool.cpp src/rviz_polygon_selection_tool.h)
-ament_target_dependencies(${PROJECT_NAME}_plugin rviz_common pluginlib)
 rosidl_get_typesupport_target(msgs_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
-target_link_libraries(${PROJECT_NAME}_plugin ${msgs_target})
+
+qt5_wrap_cpp(moc src/rviz_polygon_selection_tool.h)
+
+add_library(${PROJECT_NAME}_plugin SHARED src/rviz_polygon_selection_tool.cpp src/rviz_polygon_selection_tool.h ${moc})
+target_link_libraries(
+  ${PROJECT_NAME}_plugin
+  PUBLIC ${msgs_target}
+         pluginlib::pluginlib
+         rviz_common::rviz_common
+         rviz_rendering::rviz_rendering)
 
 # Install the library
 install(TARGETS ${PROJECT_NAME}_plugin EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
@@ -50,6 +48,7 @@ ament_export_dependencies(
   geometry_msgs
   rosidl_default_runtime
   rviz_common
+  rviz_rendering
   pluginlib)
 pluginlib_export_plugin_description_file(rviz_common plugin_description.xml)
 ament_package()

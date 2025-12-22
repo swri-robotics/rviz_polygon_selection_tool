@@ -1,7 +1,7 @@
 #include <rviz_polygon_selection_tool/srv/get_selection.hpp>
 
 #include <OgreMaterial.h>
-#include <OgreVector3.h>
+#include <OgreVector.h>
 #include <rviz_common/tool.hpp>
 #include <rclcpp/service.hpp>
 
