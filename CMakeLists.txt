@@ -24,13 +24,6 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(rviz_common REQUIRED)
 find_package(pluginlib REQUIRED)
 
-# Include the 'rosidl_get_typesupport_target' target on distros earlier than Galactic
-if(DEFINED ENV{ROS_DISTRO})
-  if("$ENV{ROS_DISTRO}" STREQUAL "foxy")
-    include(cmake/macros.cmake)
-  endif()
-endif()
-
 rosidl_generate_interfaces(
   ${PROJECT_NAME}
   "srv/GetSelection.srv"
