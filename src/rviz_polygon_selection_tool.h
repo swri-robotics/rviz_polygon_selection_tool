@@ -27,6 +27,7 @@ class BoolProperty;
 class ColorProperty;
 class FloatProperty;
 class IntProperty;
+class StringProperty;
 }  // namespace properties
 }  // namespace rviz_common
 
@@ -50,6 +51,7 @@ public:
   int processKeyEvent(QKeyEvent* event, rviz_common::RenderPanel* panel) override;
 
 public Q_SLOTS:
+  void updateServiceName();
   void updatePointsColor();
   void updatePointsSize();
   void updateLinesColor();
@@ -70,6 +72,7 @@ private:
   void updateText();
   void removeDisplays();
 
+  rviz_common::properties::StringProperty* service_name_property_;
   rviz_common::properties::BoolProperty* lasso_mode_property_;
   rviz_common::properties::BoolProperty* close_loop_property_;
   rviz_common::properties::ColorProperty* pt_color_property_;

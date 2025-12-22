@@ -15,6 +15,7 @@
 #include <rviz_common/properties/color_property.hpp>
 #include <rviz_common/properties/float_property.hpp>
 #include <rviz_common/properties/int_property.hpp>
+#include <rviz_common/properties/string_property.hpp>
 #include <rviz_common/render_panel.hpp>
 #include <rviz_common/view_controller.hpp>
 #include <rviz_rendering/material_manager.hpp>
@@ -135,38 +136,11 @@ PolygonSelectionTool::~PolygonSelectionTool()
 
 void PolygonSelectionTool::onInitialize()
 {
-  rclcpp::Node::SharedPtr node = context_->getRosNodeAbstraction().lock()->get_raw_node();
-
-#ifdef CALLBACK_GROUP_SUPPORTED
-  executor_callback_group_ = node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-  executor_.add_callback_group(executor_callback_group_, node->get_node_base_interface());
-
-#ifdef QOS_REQUIRED_IN_SERVICE
-  rclcpp::QoS qos(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT, 1),
-                  rmw_qos_profile_services_default);
-  server_ = node->create_service<srv::GetSelection>(
-      "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2),
-      qos, executor_callback_group_);
-#else
-  server_ = node->create_service<srv::GetSelection>(
-      "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2),
-      rmw_qos_profile_services_default, executor_callback_group_);
-#endif
-
-  executor_thread_ = std::thread([&]() { executor_.spin(); });
-#else
-  server_ = node->create_service<srv::GetSelection>(
-      "get_selection", std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
-#endif
-
-  static int count = 0;
-  points_material_ =
-      rviz_rendering::MaterialManager::createMaterialWithLighting("points_material_" + std::to_string(count));
-  lines_material_ =
-      rviz_rendering::MaterialManager::createMaterialWithLighting("lines_material_" + std::to_string(count));
-  ++count;
-
   // Add the properties
+  service_name_property_ = new rviz_common::properties::StringProperty(
+      "Service name", "get_selection", "The name of the service to get the selection points", getPropertyContainer(),
+      SLOT(updateServiceName()), this);
+
   lasso_mode_property_ = new rviz_common::properties::BoolProperty(
       "Lasso mode", true, "Toggle between lasso and discrete click mode", getPropertyContainer());
 
@@ -201,6 +175,17 @@ void PolygonSelectionTool::onInitialize()
   patch_size_property_ =
       new rviz_common::properties::IntProperty("Patch size", 15, "Patch size (pixels) for cursor normal estimation",
                                                getPropertyContainer(), nullptr, nullptr, 3);
+
+  // Configure the ROS service interface
+  updateServiceName();
+
+  // Configure the displays
+  static int count = 0;
+  points_material_ =
+      rviz_rendering::MaterialManager::createMaterialWithLighting("points_material_" + std::to_string(count));
+  lines_material_ =
+      rviz_rendering::MaterialManager::createMaterialWithLighting("lines_material_" + std::to_string(count));
+  ++count;
 
   points_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode();
   lines_node_ = scene_manager_->getRootSceneNode()->createChildSceneNode();
@@ -407,6 +392,39 @@ int PolygonSelectionTool::processKeyEvent(QKeyEvent* event, rviz_common::RenderP
   }
 
   return rviz_common::Tool::Render;
+}
+
+void PolygonSelectionTool::updateServiceName()
+{
+  const std::string service_name = service_name_property_->getStdString();
+
+  rclcpp::Node::SharedPtr node = context_->getRosNodeAbstraction().lock()->get_raw_node();
+
+#ifdef CALLBACK_GROUP_SUPPORTED
+  executor_.cancel();
+  if (executor_thread_.joinable())
+    executor_thread_.join();
+
+  executor_callback_group_ = node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  executor_.add_callback_group(executor_callback_group_, node->get_node_base_interface());
+
+#ifdef QOS_REQUIRED_IN_SERVICE
+  rclcpp::QoS qos(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT, 1),
+                  rmw_qos_profile_services_default);
+  server_ = node->create_service<srv::GetSelection>(
+      service_name, std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2), qos,
+      executor_callback_group_);
+#else
+  server_ = node->create_service<srv::GetSelection>(
+      service_name, std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2),
+      rmw_qos_profile_services_default, executor_callback_group_);
+#endif
+
+  executor_thread_ = std::thread([&]() { executor_.spin(); });
+#else
+  server_ = node->create_service<srv::GetSelection>(
+      service_name, std::bind(&PolygonSelectionTool::callback, this, std::placeholders::_1, std::placeholders::_2));
+#endif
 }
 
 void PolygonSelectionTool::updatePointsColor()
