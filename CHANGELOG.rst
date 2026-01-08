@@ -2,6 +2,12 @@
 Changelog for package rviz_polygon_selection_tool
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Updated CI build and removed support for ROS 2 Foxy (`#14 <https://github.com/marip8/rviz_polygon_selection_tool/issues/14>`_)
+* Added tool option to render displays as overlay on scene geometry for better visibility (`#11 <https://github.com/marip8/rviz_polygon_selection_tool/issues/11>`_)
+* Contributors: Michael Ripperger
+
 1.1.0 (2025-05-01)
 ------------------
 * Add separate executor and callback group (`#9 <https://github.com/marip8/rviz_polygon_selection_tool/issues/9>`_)
