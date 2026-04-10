@@ -13,6 +13,57 @@
 const static std::string COLOR_NAME = "mesh_cursor_tool_color";
 const static std::string DEFAULT_MESH_RESOURCE = "package://rviz_polygon_selection_tool/resources/default.stl";
 
+#if !defined(RCLCPP_VERSION_MAJOR) || (RCLCPP_VERSION_MAJOR <= 28)
+Ogre::MeshPtr loadMesh(const std::string& resource, const rviz_common::DisplayContext*)
+{
+  // Attempt to load the mesh
+  Ogre::MeshPtr mesh = rviz_rendering::loadMeshFromResource(resource);
+  if (!mesh)
+  {
+    // ROS_WARN("Loading default mesh...");
+
+    // Load a default mesh
+    mesh = rviz_rendering::loadMeshFromResource(DEFAULT_MESH_RESOURCE);
+  }
+
+  return mesh;
+}
+#else
+#include <rviz_default_plugins/ros_resource_retriever.hpp>
+#include <resource_retriever/retriever.hpp>
+#include <rviz_common/display_context.hpp>
+
+Ogre::MeshPtr loadMesh(const std::string& resource, rviz_common::DisplayContext* context)
+{
+  // Attempt to load the mesh
+  resource_retriever::RetrieverVec plugins;
+  if (context != nullptr)
+  {
+    std::shared_ptr node_ptr = context->getRosNodeAbstraction().lock();
+    if (node_ptr != nullptr)
+    {
+      plugins.push_back(std::make_shared<RosResourceRetriever>(context->getRosNodeAbstraction()));
+    }
+  }
+  for (const auto& plugin : resource_retriever::default_plugins())
+  {
+    plugins.push_back(plugin);
+  }
+  resource_retriever::Retriever ret = resource_retriever::Retriever(plugins);
+
+  Ogre::MeshPtr mesh = rviz_rendering::loadMeshFromResource(&ret, resource);
+  if (!mesh)
+  {
+    // ROS_WARN("Loading default mesh...");
+
+    // Load a default mesh
+    mesh = rviz_rendering::loadMeshFromResource(&ret, DEFAULT_MESH_RESOURCE);
+  }
+
+  return mesh;
+}
+#endif
+
 namespace rviz_polygon_selection_tool
 {
 MeshPolygonSelectionTool::MeshPolygonSelectionTool() : PolygonSelectionTool()
@@ -38,17 +89,7 @@ MeshPolygonSelectionTool::~MeshPolygonSelectionTool()
 
 Ogre::MovableObject* MeshPolygonSelectionTool::createToolVisualization()
 {
-  // Attempt to load the mesh
-  Ogre::MeshPtr mesh = rviz_rendering::loadMeshFromResource(mesh_file_->getStdString());
-  if (!mesh)
-  {
-    // ROS_WARN("Loading default mesh...");
-
-    // Load a default mesh
-    mesh = rviz_rendering::loadMeshFromResource(DEFAULT_MESH_RESOURCE);
-  }
-
-  Ogre::Entity* entity = scene_manager_->createEntity(mesh);
+  Ogre::Entity* entity = scene_manager_->createEntity(loadMesh(mesh_file_->getStdString(), context_));
   for (unsigned i = 0; i < entity->getNumSubEntities(); ++i)
   {
     Ogre::SubEntity* sub = entity->getSubEntity(i);
