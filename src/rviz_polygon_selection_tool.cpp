@@ -96,7 +96,11 @@ namespace rviz_polygon_selection_tool
 void PolygonSelectionTool::updateMaterialColor(Ogre::MaterialPtr material, const QColor& color,
                                                const bool override_self_illumination)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  float r, g, b, a;
+#else
   qreal r, g, b, a;
+#endif
   color.getRgbF(&r, &g, &b, &a);
   material->setDiffuse(r, g, b, a);
   material->setSpecular(r, g, b, a);
