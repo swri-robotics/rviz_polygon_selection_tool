@@ -25,6 +25,9 @@ find_package(rviz_common REQUIRED)
 find_package(rviz_rendering REQUIRED)
 find_package(pluginlib REQUIRED)
 
+find_package(rviz_default_plugins REQUIRED)
+find_package(resource_retriever REQUIRED)
+
 rosidl_generate_interfaces(
   ${PROJECT_NAME}
   "srv/GetSelection.srv"
@@ -45,7 +48,9 @@ target_link_libraries(
   PUBLIC ${msgs_target}
          pluginlib::pluginlib
          rviz_common::rviz_common
-         rviz_rendering::rviz_rendering)
+         rviz_rendering::rviz_rendering
+         resource_retriever::resource_retriever
+         rviz_default_plugins::rviz_default_plugins)
 
 # Install the library
 install(TARGETS ${PROJECT_NAME}_plugin EXPORT ${PROJECT_NAME}-targets DESTINATION lib)
