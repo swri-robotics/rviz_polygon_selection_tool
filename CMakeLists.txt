@@ -11,6 +11,8 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
 
+set(CMAKE_AUTOMOC ON)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -30,18 +32,14 @@ rosidl_generate_interfaces(
   geometry_msgs)
 rosidl_get_typesupport_target(msgs_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-qt5_wrap_cpp(
-  moc
-  src/rviz_polygon_selection_tool.h
-  src/circle_polygon_selection_tool.h
-  src/mesh_polygon_selection_tool.h)
-
 add_library(
   ${PROJECT_NAME}_plugin SHARED
   src/rviz_polygon_selection_tool.cpp
   src/circle_polygon_selection_tool.cpp
   src/mesh_polygon_selection_tool.cpp
-  ${moc})
+  src/rviz_polygon_selection_tool.h
+  src/circle_polygon_selection_tool.h
+  src/mesh_polygon_selection_tool.h)
 target_link_libraries(
   ${PROJECT_NAME}_plugin
   PUBLIC ${msgs_target}
